@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
-
 import json
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 import time
+
+from data_layer import TransactionDataLayer
 
 
 class TransactionGenerator:
@@ -20,9 +20,10 @@ class TransactionGenerator:
       {"id": 5, "name": "Emma Davis", "average_spending": 200.00},
    ]
 
-   def __init__(self, anomaly_probability=0.05):
+   def __init__(self, anomaly_probability=0.05, data_layer=None):
       self.anomaly_probability = anomaly_probability
       self.transaction_count = 0
+      self.data_layer = data_layer or TransactionDataLayer()
 
    def generate_normal_transaction(self, user):
       avg = user["average_spending"]
@@ -34,7 +35,7 @@ class TransactionGenerator:
          "user_id": user["id"],
          "amount": amount,
          "location": location,
-         "timestamp": datetime.utcnow().isoformat() + "Z",
+         "timestamp": datetime.now(timezone.utc).isoformat(),
          "is_anomaly": False
       }
 
@@ -59,7 +60,7 @@ class TransactionGenerator:
          "user_id": user["id"],
          "amount": amount,
          "location": location,
-         "timestamp": datetime.utcnow().isoformat() + "Z",
+         "timestamp": datetime.now(timezone.utc).isoformat(),
          "is_anomaly": True
       }
 
@@ -72,6 +73,9 @@ class TransactionGenerator:
          transaction = self.generate_normal_transaction(user)
 
       self.transaction_count += 1
+
+      self.data_layer.save_transaction(transaction)
+
       return transaction
 
 

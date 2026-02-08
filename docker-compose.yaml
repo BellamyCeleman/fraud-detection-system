@@ -6,13 +6,15 @@ services:
     container_name: fraud_db
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: alex
+      POSTGRES_PASSWORD: 1111
       POSTGRES_DB: fraud_detection
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fraud_network
 
   localstack:
     image: localstack/localstack
@@ -26,9 +28,11 @@ services:
     volumes:
       - "./localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - fraud_network
 
   jupyter:
-    image: jupyter/datascience-notebook
+    image: jupyter/scipy-notebook:latest
     container_name: fraud_jupyter
     ports:
       - "8888:8888"
@@ -36,6 +40,13 @@ services:
       - .:/home/jovyan/work
     environment:
       - JUPYTER_TOKEN=easy_password
+      - MEM_LIMIT=2g 
+    networks:
+      - fraud_network
 
 volumes:
   postgres_data:
+
+networks:
+  fraud_network:
+    driver: bridge
