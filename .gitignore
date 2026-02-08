@@ -1,0 +1,31 @@
+# --- Python & UV ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+uv.lock          # ONLY ignore if you are NOT using uv as your primary manager. 
+                 # (Pro-tip: Generally, you SHOULD commit uv.lock for reproducibility)
+
+# --- Databases & Infrastructure ---
+# Never commit the actual Postgres data files!
+pg_data/
+postgres_data/
+
+# LocalStack / AWS
+.aws/
+.localstack/
+
+# --- Environment & Secrets ---
+.env
+.env.*
+!.env.example    # Keep the template, ignore the real secrets
+
+# --- IDEs & System ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Alembic ---
+# We keep migrations, but ignore the compiled cache
+migrations/__pycache__/
