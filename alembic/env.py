@@ -6,6 +6,7 @@ from sqlalchemy import pool, create_engine
 from alembic import context
 
 from src.app_api.models import Base
+import os
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -40,8 +41,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    # url = config.get_main_option("sqlalchemy.url")
-    url = "postgresql://alex:1111@localhost:5432/fraud_detection"
+    url = config.get_main_option("sqlalchemy.url")
+    # url = "postgresql://alex:1111@localhost:5432/fraud_detection"
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -65,7 +66,7 @@ def run_migrations_online() -> None:
     #     prefix="sqlalchemy.",
     #     poolclass=pool.NullPool,
     # )
-    db_url = "postgresql://alex:1111@localhost/fraud_detection"
+    db_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
 
     # 2. Create the engine directly
     connectable = create_engine(

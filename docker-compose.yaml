@@ -1,14 +1,17 @@
 version: '3.8'
 
 services:
-  db:
+  postgres:
     image: postgres:15
-    container_name: fraud_db
+    container_name: postgres
     restart: always
+    env_file:
+      - dev.env
     environment:
-      POSTGRES_USER: alex
-      POSTGRES_PASSWORD: 1111
-      POSTGRES_DB: fraud_detection
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - RUN_MIGRATIONS=${RUN_MIGRATIONS}
     ports:
       - "5432:5432"
     volumes:
@@ -18,29 +21,100 @@ services:
 
   localstack:
     image: localstack/localstack
-    container_name: fraud_localstack
+    container_name: localstack
+    env_file:
+      - dev.env
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3
-      - DEBUG=1
+      - SERVICES=${SERVICES}
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - "./localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - fraud_network
+  
+  generator:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: generator
+    env_file:
+      - dev.env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - PYTHONPATH=${PYTHONPATH}
+      - RUN_MIGRATIONS=${RUN_MIGRATIONS}
+    depends_on:
+      - postgres
+      - localstack
+    volumes:
+      - .:/app
+    networks:
+      - fraud_network
+
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: spark_master
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - fraud_network
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: spark_worker
+    env_file:
+      - dev.env
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=${SPARK_MASTER_URL}
+    depends_on:
+      - spark-master
+    networks:
+      - fraud_network
+  
+  spark_processor:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: spark_processor
+    env_file:
+      - dev.env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - RUN_MIGRATIONS=false
+    command: src/spark_jobs/processor.py
+    depends_on:
+      - postgres
+      - localstack
+      - spark-master
+      - spark-worker
+    networks:
+      - fraud_network
 
   jupyter:
     image: jupyter/scipy-notebook:latest
     container_name: fraud_jupyter
+    env_file:
+      - dev.env
     ports:
       - "8888:8888"
     volumes:
       - .:/home/jovyan/work
     environment:
-      - JUPYTER_TOKEN=easy_password
-      - MEM_LIMIT=2g 
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
     networks:
       - fraud_network
 
