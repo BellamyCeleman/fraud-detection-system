@@ -55,22 +55,24 @@ services:
       - localstack
     volumes:
       - .:/app
+      - /app/.venv
     networks:
       - fraud_network
 
   spark-master:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.0
     container_name: spark_master
     environment:
       - SPARK_MODE=master
     ports:
       - "8080:8080"
       - "7077:7077"
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     networks:
       - fraud_network
 
   spark-worker:
-    image: bitnami/spark:3.5
+    image: apache/spark:3.5.0
     container_name: spark_worker
     env_file:
       - dev.env
@@ -79,6 +81,7 @@ services:
       - SPARK_MASTER_URL=${SPARK_MASTER_URL}
     depends_on:
       - spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     networks:
       - fraud_network
   
@@ -95,7 +98,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - RUN_MIGRATIONS=false
-    command: src/spark_jobs/processor.py
+    command: python src/spark_jobs/processor.py
     depends_on:
       - postgres
       - localstack

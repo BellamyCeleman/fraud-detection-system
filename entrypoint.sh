@@ -8,7 +8,7 @@ while ! nc -z postgres 5432; do
 done
 echo "PostgreSQL started"
 
-while ! nc -z fraud_localstack 4566; do
+while ! nc -z localstack 4566; do
   sleep 0.5
 done
 echo "LocalStack started"
