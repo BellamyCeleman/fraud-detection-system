@@ -16,6 +16,7 @@ postgres_data/
 .localstack/
 
 # --- Environment & Secrets ---
+dev.env
 .env
 .env.*
 !.env.example    # Keep the template, ignore the real secrets
